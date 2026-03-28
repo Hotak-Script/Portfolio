@@ -1,0 +1,218 @@
+﻿const yearEl = document.getElementById("year");
+if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+const LEADS_CONFIG = {
+  supabaseUrl: "https://crlukmjyqxqfqjxhhjuc.supabase.co",
+  supabaseAnonKey: "sb_publishable_BdudckqjKyjjtW8_ddKB8g_TvFlBaVc",
+  tableName: "portfolio_leads"
+};
+
+const revealEls = document.querySelectorAll(".reveal");
+const io = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("active");
+      }
+    });
+  },
+  { threshold: 0.16 }
+);
+revealEls.forEach((el) => io.observe(el));
+
+const tiltCards = document.querySelectorAll(".tilt");
+tiltCards.forEach((card) => {
+  card.addEventListener("mousemove", (e) => {
+    const r = card.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    const rotY = (x / r.width - 0.5) * 10;
+    const rotX = (0.5 - y / r.height) * 10;
+    card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) translateY(-4px)`;
+  });
+
+  card.addEventListener("mouseleave", () => {
+    card.style.transform = "rotateX(0deg) rotateY(0deg)";
+  });
+});
+
+const cursor = document.getElementById("cursor");
+document.addEventListener("mousemove", (e) => {
+  if (cursor) {
+    cursor.style.left = e.clientX - 10 + "px";
+    cursor.style.top = e.clientY - 10 + "px";
+  }
+});
+
+const interactiveEls = document.querySelectorAll("a, button, .tilt, .skill-card, .stat-grid article");
+interactiveEls.forEach((el) => {
+  el.addEventListener("mouseenter", () => {
+    cursor.style.transform = "scale(1.5)";
+  });
+  el.addEventListener("mouseleave", () => {
+    cursor.style.transform = "scale(1)";
+  });
+});
+
+// Theme toggle
+const themeToggle = document.getElementById("theme-toggle");
+const body = document.body;
+const themeIcon = themeToggle.querySelector("i");
+
+// Check for saved theme preference or default to dark
+const currentTheme = localStorage.getItem("theme") || "dark";
+if (currentTheme === "light") {
+  body.classList.add("light");
+  themeIcon.classList.remove("fa-moon");
+  themeIcon.classList.add("fa-sun");
+}
+
+themeToggle.addEventListener("click", () => {
+  body.classList.toggle("light");
+  const isLight = body.classList.contains("light");
+  localStorage.setItem("theme", isLight ? "light" : "dark");
+  
+  if (isLight) {
+    themeIcon.classList.remove("fa-moon");
+    themeIcon.classList.add("fa-sun");
+  } else {
+    themeIcon.classList.remove("fa-sun");
+    themeIcon.classList.add("fa-moon");
+  }
+});
+
+const canvas = document.getElementById("particles");
+const ctx = canvas ? canvas.getContext("2d") : null;
+let particles = [];
+
+function setSize() {
+  if (!canvas) return;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function buildParticles(count = 85) {
+  if (!canvas) return;
+  particles = Array.from({ length: count }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2 + 0.6,
+    vx: (Math.random() - 0.5) * 0.35,
+    vy: (Math.random() - 0.5) * 0.35
+  }));
+}
+
+function animate() {
+  if (!canvas || !ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  particles.forEach((p) => {
+    p.x += p.vx;
+    p.y += p.vy;
+
+    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(110, 224, 255, 0.7)";
+    ctx.fill();
+  });
+
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 110) {
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(73, 242, 184, ${1 - dist / 110})`;
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+window.addEventListener("resize", () => {
+  setSize();
+  buildParticles();
+});
+
+setSize();
+buildParticles();
+animate();
+
+const contactForm = document.getElementById("contact-form");
+const formStatus = document.getElementById("form-status");
+
+function setFormStatus(message, type = "") {
+  if (!formStatus) return;
+  formStatus.textContent = message;
+  formStatus.className = `form-status ${type}`.trim();
+}
+
+async function saveLeadToSupabase(payload) {
+  const { supabaseUrl, supabaseAnonKey, tableName } = LEADS_CONFIG;
+  if (
+    !supabaseUrl ||
+    !supabaseAnonKey ||
+    supabaseUrl.includes("YOUR_SUPABASE_URL") ||
+    supabaseAnonKey.includes("YOUR_SUPABASE_ANON_KEY")
+  ) {
+    throw new Error("Supabase config missing");
+  }
+
+  const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+      Prefer: "return=minimal"
+    },
+    body: JSON.stringify([payload])
+  });
+
+  if (!res.ok) {
+    throw new Error(`Save failed (${res.status})`);
+  }
+}
+
+if (contactForm) {
+  contactForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(contactForm);
+    const payload = {
+      name: String(formData.get("name") || "").trim(),
+      email: String(formData.get("email") || "").trim(),
+      message: String(formData.get("message") || "").trim(),
+      created_at: new Date().toISOString()
+    };
+
+    if (!payload.name || !payload.email || !payload.message) {
+      setFormStatus("Please fill all required fields.", "error");
+      return;
+    }
+
+    setFormStatus("Sending...", "");
+
+    try {
+      await saveLeadToSupabase(payload);
+      contactForm.reset();
+      setFormStatus("Message sent successfully. We will contact you soon.", "success");
+    } catch (error) {
+      setFormStatus(
+        "Submit failed. Add Supabase URL/Anon key in script.js and check table policy.",
+        "error"
+      );
+      console.error(error);
+    }
+  });
+}
