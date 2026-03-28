@@ -1,4 +1,4 @@
-﻿const yearEl = document.getElementById("year");
+const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 const LEADS_CONFIG = {
@@ -37,29 +37,73 @@ tiltCards.forEach((card) => {
 });
 
 const cursor = document.getElementById("cursor");
-document.addEventListener("mousemove", (e) => {
-  if (cursor) {
+const interactiveEls = document.querySelectorAll("a, button, .tilt, .skill-card, .stat-grid article");
+const isTabletOrMobile =
+  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const supportsCustomCursor =
+  !!cursor &&
+  window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+  !isTabletOrMobile;
+
+if (supportsCustomCursor) {
+  document.body.classList.add("has-custom-cursor");
+
+  document.addEventListener("mousemove", (e) => {
     cursor.style.left = e.clientX - 10 + "px";
     cursor.style.top = e.clientY - 10 + "px";
-  }
-});
-
-const interactiveEls = document.querySelectorAll("a, button, .tilt, .skill-card, .stat-grid article");
-interactiveEls.forEach((el) => {
-  el.addEventListener("mouseenter", () => {
-    cursor.style.transform = "scale(1.5)";
   });
-  el.addEventListener("mouseleave", () => {
-    cursor.style.transform = "scale(1)";
-  });
-});
 
-// Theme toggle
+  interactiveEls.forEach((el) => {
+    el.addEventListener("mouseenter", () => {
+      cursor.style.transform = "scale(1.5)";
+    });
+    el.addEventListener("mouseleave", () => {
+      cursor.style.transform = "scale(1)";
+    });
+  });
+} else if (cursor) {
+  cursor.style.display = "none";
+}
+
+const navToggle = document.getElementById("nav-toggle");
+const siteNav = document.getElementById("site-nav");
+const navLinks = siteNav ? siteNav.querySelectorAll("a") : [];
+
+function closeMobileNav() {
+  if (!navToggle || !siteNav) return;
+  navToggle.classList.remove("active");
+  siteNav.classList.remove("active");
+  navToggle.setAttribute("aria-expanded", "false");
+  navToggle.setAttribute("aria-label", "Open navigation menu");
+}
+
+if (navToggle && siteNav) {
+  navToggle.addEventListener("click", () => {
+    const isOpen = siteNav.classList.toggle("active");
+    navToggle.classList.toggle("active", isOpen);
+    navToggle.setAttribute("aria-expanded", String(isOpen));
+    navToggle.setAttribute(
+      "aria-label",
+      isOpen ? "Close navigation menu" : "Open navigation menu"
+    );
+  });
+
+  navLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      if (window.innerWidth <= 760) closeMobileNav();
+    });
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 760) closeMobileNav();
+  });
+}
+
 const themeToggle = document.getElementById("theme-toggle");
 const body = document.body;
 const themeIcon = themeToggle.querySelector("i");
 
-// Check for saved theme preference or default to dark
 const currentTheme = localStorage.getItem("theme") || "dark";
 if (currentTheme === "light") {
   body.classList.add("light");
@@ -71,7 +115,7 @@ themeToggle.addEventListener("click", () => {
   body.classList.toggle("light");
   const isLight = body.classList.contains("light");
   localStorage.setItem("theme", isLight ? "light" : "dark");
-  
+
   if (isLight) {
     themeIcon.classList.remove("fa-moon");
     themeIcon.classList.add("fa-sun");
