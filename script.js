@@ -1,12 +1,6 @@
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
-const LEADS_CONFIG = {
-  supabaseUrl: "https://crlukmjyqxqfqjxhhjuc.supabase.co",
-  supabaseAnonKey: "sb_publishable_BdudckqjKyjjtW8_ddKB8g_TvFlBaVc",
-  tableName: "portfolio_leads"
-};
-
 const revealEls = document.querySelectorAll(".reveal");
 const io = new IntersectionObserver(
   (entries) => {
@@ -192,71 +186,3 @@ setSize();
 buildParticles();
 animate();
 
-const contactForm = document.getElementById("contact-form");
-const formStatus = document.getElementById("form-status");
-
-function setFormStatus(message, type = "") {
-  if (!formStatus) return;
-  formStatus.textContent = message;
-  formStatus.className = `form-status ${type}`.trim();
-}
-
-async function saveLeadToSupabase(payload) {
-  const { supabaseUrl, supabaseAnonKey, tableName } = LEADS_CONFIG;
-  if (
-    !supabaseUrl ||
-    !supabaseAnonKey ||
-    supabaseUrl.includes("YOUR_SUPABASE_URL") ||
-    supabaseAnonKey.includes("YOUR_SUPABASE_ANON_KEY")
-  ) {
-    throw new Error("Supabase config missing");
-  }
-
-  const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: supabaseAnonKey,
-      Authorization: `Bearer ${supabaseAnonKey}`,
-      Prefer: "return=minimal"
-    },
-    body: JSON.stringify([payload])
-  });
-
-  if (!res.ok) {
-    throw new Error(`Save failed (${res.status})`);
-  }
-}
-
-if (contactForm) {
-  contactForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(contactForm);
-    const payload = {
-      name: String(formData.get("name") || "").trim(),
-      email: String(formData.get("email") || "").trim(),
-      message: String(formData.get("message") || "").trim(),
-      created_at: new Date().toISOString()
-    };
-
-    if (!payload.name || !payload.email || !payload.message) {
-      setFormStatus("Please fill all required fields.", "error");
-      return;
-    }
-
-    setFormStatus("Sending...", "");
-
-    try {
-      await saveLeadToSupabase(payload);
-      contactForm.reset();
-      setFormStatus("Message sent successfully. We will contact you soon.", "success");
-    } catch (error) {
-      setFormStatus(
-        "Submit failed. Add Supabase URL/Anon key in script.js and check table policy.",
-        "error"
-      );
-      console.error(error);
-    }
-  });
-}

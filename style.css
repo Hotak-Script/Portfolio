@@ -364,8 +364,7 @@ h2 {
   margin-bottom: 1rem;
 }
 
-.about p,
-.contact p {
+.about p {
   color: var(--muted);
   max-width: 760px;
 }
@@ -448,26 +447,6 @@ h2 {
 .project-card a {
   color: var(--accent);
   text-decoration: none;
-}
-
-.contact form {
-  margin-top: 1.4rem;
-  display: grid;
-  gap: 0.8rem;
-}
-
-.form-status {
-  min-height: 1.2rem;
-  font-size: 0.95rem;
-  color: var(--muted);
-}
-
-.form-status.success {
-  color: #70ffbf;
-}
-
-.form-status.error {
-  color: #ff9b9b;
 }
 
 input,
